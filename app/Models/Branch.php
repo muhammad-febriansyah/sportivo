@@ -79,6 +79,14 @@ class Branch extends Model
     }
 
     /**
+     * @return HasMany<Field, $this>
+     */
+    public function fields(): HasMany
+    {
+        return $this->hasMany(Field::class);
+    }
+
+    /**
      * @return BelongsTo<Province, $this>
      */
     public function province(): BelongsTo

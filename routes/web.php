@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\FieldController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Master cabang — dibatasi owner lewat BranchPolicy.
     Route::resource('branches', BranchController::class)->only([
+        'index', 'create', 'store', 'edit', 'update', 'destroy',
+    ]);
+
+    // Master lapangan — owner semua cabang, admin hanya cabangnya (FieldPolicy).
+    Route::resource('fields', FieldController::class)->only([
         'index', 'create', 'store', 'edit', 'update', 'destroy',
     ]);
 

@@ -1,5 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, FolderGit2, LayoutGrid, Users } from 'lucide-react';
+import {
+    BookOpen,
+    Building2,
+    FolderGit2,
+    Goal,
+    LayoutGrid,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,6 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as branchesIndex } from '@/routes/branches';
+import { index as fieldsIndex } from '@/routes/fields';
 import { index as usersIndex } from '@/routes/users';
 import type { NavItem } from '@/types';
 
@@ -26,7 +34,16 @@ const navUmum: NavItem[] = [
     },
 ];
 
-// Master data hanya untuk owner — lihat UserPolicy dan BranchPolicy.
+// Owner dan admin cabang — lihat FieldPolicy.
+const navMaster: NavItem[] = [
+    {
+        title: 'Lapangan',
+        href: fieldsIndex(),
+        icon: Goal,
+    },
+];
+
+// Hanya owner — lihat UserPolicy dan BranchPolicy.
 const navOwner: NavItem[] = [
     {
         title: 'Cabang',
@@ -56,9 +73,14 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage().props;
     const isOwner = auth.roles.includes('owner');
+    const isAdmin = auth.roles.includes('admin');
 
-    // Menyembunyikan menu hanya kosmetik — penjagaan sebenarnya ada di UserPolicy.
-    const navItems = isOwner ? [...navUmum, ...navOwner] : navUmum;
+    // Menyembunyikan menu hanya kosmetik — penjagaan sebenarnya ada di Policy.
+    const navItems = [
+        ...navUmum,
+        ...(isOwner || isAdmin ? navMaster : []),
+        ...(isOwner ? navOwner : []),
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">

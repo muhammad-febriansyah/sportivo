@@ -88,3 +88,29 @@ const LABEL_ROLE: Record<string, string> = {
 export function formatRole(role: string): string {
     return LABEL_ROLE[role] ?? role;
 }
+
+const LABEL_TIPE_RUMPUT: Record<string, string> = {
+    sintetis: 'Rumput Sintetis',
+    vinyl: 'Vinyl',
+    interlock: 'Interlock',
+};
+
+/**
+ * Cerminan App\Enums\SurfaceType::label() di sisi klien.
+ */
+export function formatTipeRumput(tipe: string): string {
+    return LABEL_TIPE_RUMPUT[tipe] ?? tipe;
+}
+
+const LABEL_STATUS_LAPANGAN: Record<string, string> = {
+    active: 'Aktif',
+    maintenance: 'Maintenance',
+    inactive: 'Nonaktif',
+};
+
+/**
+ * Cerminan App\Enums\FieldStatus::label() di sisi klien.
+ */
+export function formatStatusLapangan(status: string): string {
+    return LABEL_STATUS_LAPANGAN[status] ?? status;
+}
