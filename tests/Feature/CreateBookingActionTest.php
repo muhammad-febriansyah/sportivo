@@ -7,6 +7,7 @@ use App\Enums\BookingStatus;
 use App\Enums\DayType;
 use App\Exceptions\PriceNotConfiguredException;
 use App\Exceptions\SlotUnavailableException;
+use App\Models\BlockedSlot;
 use App\Models\Booking;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -265,6 +266,64 @@ test('booking pending tetap menahan slot', function () {
 
     expect(fn () => $this->action->execute(dataBooking()))
         ->toThrow(SlotUnavailableException::class);
+});
+
+/**
+ * Slot yang diblokir tidak boleh dibooking.
+ *
+ * Grid sudah menandainya abu, tapi penandaan di UI saja tidak cukup — form bisa
+ * disubmit langsung, dan blokir bisa dibuat setelah halaman grid dimuat.
+ */
+test('booking di slot yang diblokir ditolak', function () {
+    BlockedSlot::factory()->forField($this->lapangan)
+        ->on($this->tanggal, '19:00:00', '21:00:00')
+        ->create(['reason' => 'Maintenance rumput']);
+
+    expect(fn () => $this->action->execute(dataBooking()))
+        ->toThrow(SlotUnavailableException::class);
+
+    expect(Booking::count())->toBe(0);
+});
+
+test('booking ditolak bila blokir se-cabang menutup slot', function () {
+    BlockedSlot::factory()->wholeBranch($this->cabang)
+        ->on($this->tanggal, '19:00:00', '21:00:00')
+        ->create();
+
+    expect(fn () => $this->action->execute(dataBooking()))
+        ->toThrow(SlotUnavailableException::class);
+});
+
+test('blokir lapangan lain tidak menghalangi booking', function () {
+    $lapanganLain = Field::factory()->forBranch($this->cabang)->create();
+
+    BlockedSlot::factory()->forField($lapanganLain)
+        ->on($this->tanggal, '19:00:00', '21:00:00')
+        ->create();
+
+    $booking = $this->action->execute(dataBooking());
+
+    expect($booking)->not->toBeNull();
+});
+
+test('blokir di luar rentang jam tidak menghalangi booking', function () {
+    BlockedSlot::factory()->forField($this->lapangan)
+        ->on($this->tanggal, '08:00:00', '12:00:00')
+        ->create();
+
+    $booking = $this->action->execute(dataBooking(['startTime' => '19:00']));
+
+    expect($booking)->not->toBeNull();
+});
+
+test('blokir tanggal lain tidak menghalangi booking', function () {
+    BlockedSlot::factory()->forField($this->lapangan)
+        ->on(Carbon::parse('2026-07-16'), '19:00:00', '21:00:00')
+        ->create();
+
+    $booking = $this->action->execute(dataBooking());
+
+    expect($booking)->not->toBeNull();
 });
 
 /**

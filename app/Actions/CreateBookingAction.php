@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\BookingStatus;
 use App\Exceptions\PriceNotConfiguredException;
 use App\Exceptions\SlotUnavailableException;
+use App\Models\BlockedSlot;
 use App\Models\Booking;
 use App\Models\Customer;
 use App\Models\Field;
@@ -48,6 +49,20 @@ class CreateBookingAction
 
             if ($bentrok) {
                 throw SlotUnavailableException::make();
+            }
+
+            // Slot yang diblokir admin tidak boleh dibooking. Penandaan abu di
+            // grid saja tidak cukup: form bisa disubmit langsung, dan blokir
+            // bisa dibuat setelah halaman grid dimuat. Lihat docs/01-prd.md Modul 12.
+            $blokir = BlockedSlot::query()
+                ->where('branch_id', $field->branch_id)
+                // field_id null = blokir seluruh lapangan di cabang tersebut.
+                ->where(fn ($q) => $q->whereNull('field_id')->orWhere('field_id', $field->id))
+                ->overlapping($data->date, $data->startTime, $endTime)
+                ->first();
+
+            if ($blokir !== null) {
+                throw SlotUnavailableException::blocked($blokir->reason);
             }
 
             $isMember = $customer->isActiveMember($data->date);

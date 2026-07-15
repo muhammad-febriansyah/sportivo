@@ -55,6 +55,14 @@ class BlockedSlot extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * Blokir ini menutup lapangan tertentu?
      * field_id null berarti seluruh lapangan di cabang tersebut ikut tertutup.
      */

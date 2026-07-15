@@ -17,4 +17,12 @@ class SlotUnavailableException extends Exception
     {
         return new self('Slot sudah terisi, silakan pilih jam lain.');
     }
+
+    /**
+     * Slot ditutup admin untuk maintenance atau event privat (Modul 12).
+     */
+    public static function blocked(string $reason): self
+    {
+        return new self("Slot ini diblokir: {$reason}");
+    }
 }

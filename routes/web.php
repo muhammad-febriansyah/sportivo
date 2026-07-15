@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BlockedSlotController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CustomerController;
@@ -43,6 +44,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'index', 'create', 'store', 'show',
     ]);
     Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');
+
+    // Blocking slot — admin cabang & owner (BlockedSlotPolicy).
+    Route::resource('blocked-slots', BlockedSlotController::class)->only([
+        'index', 'store', 'destroy',
+    ]);
 
     // Pelanggan — tidak terikat cabang; kasir perlu membuatnya saat walk-in.
     Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');

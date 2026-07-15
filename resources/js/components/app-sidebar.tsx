@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    Ban,
     BookOpen,
     Building2,
     CalendarDays,
@@ -24,6 +25,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as blockedSlotsIndex } from '@/routes/blocked-slots';
 import { grid as bookingsGrid, index as bookingsIndex } from '@/routes/bookings';
 import { index as branchesIndex } from '@/routes/branches';
 import { index as customersIndex } from '@/routes/customers';
@@ -55,12 +57,17 @@ const navUmum: NavItem[] = [
     },
 ];
 
-// Owner dan admin cabang — lihat FieldPolicy.
+// Owner dan admin cabang — lihat FieldPolicy dan BlockedSlotPolicy.
 const navMaster: NavItem[] = [
     {
         title: 'Lapangan',
         href: fieldsIndex(),
         icon: Goal,
+    },
+    {
+        title: 'Blocking Slot',
+        href: blockedSlotsIndex(),
+        icon: Ban,
     },
 ];
 
