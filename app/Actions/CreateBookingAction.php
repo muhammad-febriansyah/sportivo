@@ -3,8 +3,10 @@
 namespace App\Actions;
 
 use App\Enums\BookingStatus;
+use App\Exceptions\AddonUnavailableException;
 use App\Exceptions\PriceNotConfiguredException;
 use App\Exceptions\SlotUnavailableException;
+use App\Models\Addon;
 use App\Models\BlockedSlot;
 use App\Models\Booking;
 use App\Models\Customer;
@@ -77,12 +79,17 @@ class CreateBookingAction
             );
 
             $subtotalLapangan = $hargaPerJam * $data->durationHours;
-            $total = $subtotalLapangan;
+
+            // Harga add-on juga diambil server dari master, tidak dari klien.
+            $addons = $this->resolveAddons($data, $field->branch_id);
+            $subtotalAddons = array_sum(array_column($addons, 'subtotal'));
+
+            $total = $subtotalLapangan + $subtotalAddons;
 
             $dp = $this->resolveDpAmount($data, $field, $total);
             $holdMenit = $field->branch->setting?->online_hold_minutes ?? 15;
 
-            return Booking::create([
+            $booking = Booking::create([
                 'code' => $this->uniqueCode($data),
                 'branch_id' => $field->branch_id,
                 'field_id' => $field->id,
@@ -103,7 +110,7 @@ class CreateBookingAction
                 'is_member_price' => $isMember,
 
                 'subtotal_field' => $subtotalLapangan,
-                'subtotal_addons' => 0,
+                'subtotal_addons' => $subtotalAddons,
                 'total' => $total,
                 'dp_amount' => $dp,
                 'paid_amount' => 0,
@@ -116,7 +123,67 @@ class CreateBookingAction
                     : null,
                 'created_by' => $data->createdBy,
             ]);
+
+            if ($addons !== []) {
+                $booking->addons()->createMany($addons);
+            }
+
+            return $booking;
         });
+    }
+
+    /**
+     * Baris add-on beserta snapshot nama & harganya.
+     *
+     * Add-on wajib milik cabang yang sama dan berstatus aktif — tanpa itu,
+     * mengirim addon_id cabang lain di payload akan menambah tagihan dengan
+     * barang yang tidak ada di cabang tersebut.
+     *
+     * @return array<int, array{addon_id: int, addon_name: string, addon_price: int, qty: int, subtotal: int}>
+     *
+     * @throws AddonUnavailableException
+     */
+    private function resolveAddons(CreateBookingData $data, int $branchId): array
+    {
+        if ($data->addons === []) {
+            return [];
+        }
+
+        $master = Addon::query()
+            ->whereIn('id', array_keys($data->addons))
+            ->where('branch_id', $branchId)
+            ->active()
+            ->get()
+            ->keyBy('id');
+
+        $hasil = [];
+
+        foreach ($data->addons as $addonId => $qty) {
+            $addon = $master->get($addonId);
+
+            if ($addon === null) {
+                throw AddonUnavailableException::notFound($addonId);
+            }
+
+            if ($qty < 1) {
+                continue;
+            }
+
+            if (! $addon->hasStockFor($qty)) {
+                throw AddonUnavailableException::outOfStock($addon->name, $addon->stock ?? 0);
+            }
+
+            $hasil[] = [
+                'addon_id' => $addon->id,
+                // Snapshot — perubahan master tidak mengubah tagihan booking ini.
+                'addon_name' => $addon->name,
+                'addon_price' => $addon->price,
+                'qty' => $qty,
+                'subtotal' => $addon->price * $qty,
+            ];
+        }
+
+        return $hasil;
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddonController;
 use App\Http\Controllers\BlockedSlotController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BranchController;
@@ -49,6 +50,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('bookings/{booking}/reschedule', [BookingController::class, 'editReschedule'])->name('bookings.reschedule.edit');
     Route::put('bookings/{booking}/reschedule', [BookingController::class, 'reschedule'])->name('bookings.reschedule');
     Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+
+    // Master add-on — admin cabang & owner (AddonPolicy).
+    Route::resource('addons', AddonController::class)->only([
+        'index', 'store', 'update', 'destroy',
+    ]);
 
     // Blocking slot — admin cabang & owner (BlockedSlotPolicy).
     Route::resource('blocked-slots', BlockedSlotController::class)->only([

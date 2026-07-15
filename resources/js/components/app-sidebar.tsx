@@ -9,6 +9,7 @@ import {
     FolderGit2,
     Goal,
     LayoutGrid,
+    Package,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -25,6 +26,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as addonsIndex } from '@/routes/addons';
 import { index as blockedSlotsIndex } from '@/routes/blocked-slots';
 import { grid as bookingsGrid, index as bookingsIndex } from '@/routes/bookings';
 import { index as branchesIndex } from '@/routes/branches';
@@ -63,6 +65,11 @@ const navMaster: NavItem[] = [
         title: 'Lapangan',
         href: fieldsIndex(),
         icon: Goal,
+    },
+    {
+        title: 'Add-on',
+        href: addonsIndex(),
+        icon: Package,
     },
     {
         title: 'Blocking Slot',

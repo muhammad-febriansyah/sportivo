@@ -21,6 +21,13 @@ class CreateBookingData
         /** Null = pakai persentase DP dari pengaturan cabang. */
         public ?int $dpAmount = null,
         public bool $payFull = false,
+        /**
+         * Add-on yang disewa: [addon_id => qty]. Harganya diambil server dari
+         * master add-on, tidak pernah dari klien.
+         *
+         * @var array<int, int>
+         */
+        public array $addons = [],
     ) {}
 
     /**
