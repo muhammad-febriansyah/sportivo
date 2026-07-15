@@ -109,6 +109,18 @@
         @apply border-border;
     }
 
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Hormati user yang mematikan animasi di setelan OS — scroll smooth bisa
+       memicu mual bagi pengidap gangguan vestibular. */
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+    }
+
     body {
         @apply bg-background text-foreground;
     }
