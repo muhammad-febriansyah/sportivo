@@ -45,6 +45,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ]);
     Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');
 
+    // Reschedule & pembatalan — kebijakannya per cabang (BookingRuleService).
+    Route::get('bookings/{booking}/reschedule', [BookingController::class, 'editReschedule'])->name('bookings.reschedule.edit');
+    Route::put('bookings/{booking}/reschedule', [BookingController::class, 'reschedule'])->name('bookings.reschedule');
+    Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+
     // Blocking slot — admin cabang & owner (BlockedSlotPolicy).
     Route::resource('blocked-slots', BlockedSlotController::class)->only([
         'index', 'store', 'destroy',

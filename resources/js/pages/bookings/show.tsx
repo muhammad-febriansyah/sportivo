@@ -1,6 +1,17 @@
-import { Head, router } from '@inertiajs/react';
-import { CheckCircle2 } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { CalendarClock, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
 import { PageHeader } from '@/components/page-header';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +21,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     formatRupiah,
     formatStatusBooking,
@@ -18,12 +31,23 @@ import {
     warnaStatusBooking,
 } from '@/lib/format';
 import { dashboard } from '@/routes';
-import { checkIn, grid, index } from '@/routes/bookings';
+import { cancel, checkIn, grid, index } from '@/routes/bookings';
+import { edit as rescheduleEdit } from '@/routes/bookings/reschedule';
 import type { BookingDetail } from '@/types';
 
 type Props = {
-    booking: BookingDetail;
+    booking: BookingDetail & {
+        reschedule_count: number;
+        rescheduled_from: {
+            date: string;
+            start_time: string;
+            end_time: string;
+            field_name: string;
+        } | null;
+    };
     canCancel: boolean;
+    cancelRule: { allowed: boolean; reason: string | null; refunds_dp: boolean };
+    rescheduleRule: { allowed: boolean; reason: string | null };
 };
 
 function Baris({ label, value }: { label: string; value: React.ReactNode }) {
@@ -35,8 +59,15 @@ function Baris({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function BookingsShow({ booking, canCancel }: Props) {
+export default function BookingsShow({
+    booking,
+    canCancel,
+    cancelRule,
+    rescheduleRule,
+}: Props) {
     const sudahCheckIn = booking.checked_in_at !== null;
+    const [dialogBatal, setDialogBatal] = useState(false);
+    const [alasan, setAlasan] = useState('');
 
     return (
         <>
@@ -206,18 +237,95 @@ export default function BookingsShow({ booking, canCancel }: Props) {
                     </Card>
                 </div>
 
+                {booking.rescheduled_from && (
+                    <p className="mt-4 max-w-4xl text-sm text-muted-foreground">
+                        Jadwal sebelumnya:{' '}
+                        {formatTanggal(booking.rescheduled_from.date)},{' '}
+                        {booking.rescheduled_from.start_time}–
+                        {booking.rescheduled_from.end_time} di{' '}
+                        {booking.rescheduled_from.field_name}. Sudah
+                        di-reschedule {booking.reschedule_count} kali.
+                    </p>
+                )}
+
+                <div className="mt-4 flex max-w-4xl flex-wrap gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => router.get(grid().url)}
+                    >
+                        Kembali ke Grid
+                    </Button>
+
+                    {rescheduleRule.allowed ? (
+                        <Button variant="outline" asChild>
+                            <Link href={rescheduleEdit(booking.id)}>
+                                <CalendarClock className="size-4" />
+                                Reschedule
+                            </Link>
+                        </Button>
+                    ) : (
+                        <span className="self-center text-sm text-muted-foreground">
+                            {rescheduleRule.reason}
+                        </span>
+                    )}
+
+                    {canCancel && cancelRule.allowed && (
+                        <Button
+                            variant="destructive"
+                            onClick={() => setDialogBatal(true)}
+                        >
+                            Batalkan
+                        </Button>
+                    )}
+                </div>
+
                 {!canCancel && (
-                    <p className="mt-4 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         Pembatalan hanya dapat dilakukan admin atau owner.
                     </p>
                 )}
             </div>
 
-            <div className="px-4 pb-4">
-                <Button variant="outline" onClick={() => router.get(grid().url)}>
-                    Kembali ke Grid
-                </Button>
-            </div>
+            <AlertDialog open={dialogBatal} onOpenChange={setDialogBatal}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Batalkan booking {booking.code}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {cancelRule.refunds_dp
+                                ? `Pembatalan masih dalam batas kebijakan — DP ${formatRupiah(booking.dp_amount)} dikembalikan.`
+                                : `Pembatalan sudah melewati batas kebijakan — DP ${formatRupiah(booking.dp_amount)} akan HANGUS.`}{' '}
+                            Slot akan kembali tersedia untuk pelanggan lain.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="alasan">Alasan pembatalan</Label>
+                        <Input
+                            id="alasan"
+                            value={alasan}
+                            onChange={(e) => setAlasan(e.target.value)}
+                            placeholder="Opsional, contoh: Hujan deras"
+                        />
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Kembali</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() =>
+                                router.post(
+                                    cancel(booking.id).url,
+                                    { reason: alasan || null },
+                                    { preserveScroll: true },
+                                )
+                            }
+                        >
+                            Batalkan Booking
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

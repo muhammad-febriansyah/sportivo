@@ -2,18 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CancelBookingAction;
 use App\Actions\CreateBookingAction;
 use App\Actions\CreateBookingData;
+use App\Actions\RescheduleBookingAction;
 use App\Enums\BookingSource;
 use App\Enums\BookingStatus;
+use App\Exceptions\BookingRuleViolationException;
 use App\Exceptions\PriceNotConfiguredException;
 use App\Exceptions\SlotUnavailableException;
+use App\Http\Requests\CancelBookingRequest;
+use App\Http\Requests\RescheduleBookingRequest;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
 use App\Models\Branch;
 use App\Models\Field;
 use App\Models\User;
 use App\Services\AvailabilityService;
+use App\Services\BookingRuleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,6 +32,9 @@ class BookingController extends Controller
     public function __construct(
         private readonly AvailabilityService $availability,
         private readonly CreateBookingAction $createBooking,
+        private readonly RescheduleBookingAction $rescheduleBooking,
+        private readonly CancelBookingAction $cancelBooking,
+        private readonly BookingRuleService $rules,
     ) {}
 
     /**
@@ -171,9 +180,106 @@ class BookingController extends Controller
                 'source' => $booking->source->value,
                 'checked_in_at' => $booking->checked_in_at?->toIso8601String(),
                 'expired_at' => $booking->expired_at?->toIso8601String(),
+                'reschedule_count' => $booking->reschedule_count,
+                'rescheduled_from' => $booking->rescheduled_from,
             ],
+            // Izin dan kebijakan dipisah: policy menentukan siapa yang berwenang,
+            // BookingRuleService menentukan apakah kebijakan cabang mengizinkan.
             'canCancel' => $request->user()->can('cancel', $booking),
+            'cancelRule' => $this->rules->canCancel($booking),
+            'rescheduleRule' => $this->rules->canReschedule($booking),
         ]);
+    }
+
+    /**
+     * Halaman pilih jadwal baru (Modul 8).
+     */
+    public function editReschedule(Request $request, Booking $booking): Response
+    {
+        Gate::authorize('update', $booking);
+
+        $izin = $this->rules->canReschedule($booking);
+
+        return Inertia::render('bookings/reschedule', [
+            'booking' => [
+                'id' => $booking->id,
+                'code' => $booking->code,
+                'field_id' => $booking->field_id,
+                'field_name' => $booking->field_name,
+                'booking_date' => $booking->booking_date->toDateString(),
+                'start_time' => substr($booking->start_time, 0, 5),
+                'end_time' => substr($booking->end_time, 0, 5),
+                'duration_hours' => $booking->duration_hours,
+                'price_per_hour' => $booking->price_per_hour,
+                'total' => $booking->total,
+                'paid_amount' => $booking->paid_amount,
+                'reschedule_count' => $booking->reschedule_count,
+            ],
+            'canReschedule' => $izin['allowed'],
+            'reason' => $izin['reason'],
+            // Hanya lapangan di cabang yang sama — pindah cabang bukan reschedule.
+            'fields' => $booking->branch->fields()
+                ->select(['id', 'name'])
+                ->publiclyBookable()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Field $f): array => ['value' => $f->id, 'label' => $f->name])
+                ->all(),
+        ]);
+    }
+
+    public function reschedule(RescheduleBookingRequest $request, Booking $booking): RedirectResponse
+    {
+        $data = $request->validated();
+        $hargaLama = $booking->total;
+
+        try {
+            $baru = $this->rescheduleBooking->execute(
+                $booking,
+                Carbon::parse($data['booking_date']),
+                $data['start_time'],
+                isset($data['field_id']) ? (int) $data['field_id'] : null,
+            );
+        } catch (BookingRuleViolationException $e) {
+            return back()->withErrors(['booking_date' => $e->getMessage()]);
+        } catch (SlotUnavailableException|PriceNotConfiguredException $e) {
+            return back()->withErrors(['start_time' => $e->getMessage()]);
+        }
+
+        // Selisih harga perlu disampaikan: lebih mahal = pelanggan menambah
+        // bayar, lebih murah = kelebihannya mengurangi sisa tagihan.
+        $selisih = $baru->total - $hargaLama;
+
+        $pesan = match (true) {
+            $selisih > 0 => "Jadwal diperbarui. Tagihan bertambah {$this->rupiah($selisih)}.",
+            $selisih < 0 => "Jadwal diperbarui. Tagihan berkurang {$this->rupiah(abs($selisih))}.",
+            default => 'Jadwal berhasil diperbarui.',
+        };
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $pesan]);
+
+        return to_route('bookings.show', $baru);
+    }
+
+    public function cancel(CancelBookingRequest $request, Booking $booking): RedirectResponse
+    {
+        try {
+            $hasil = $this->cancelBooking->execute($booking, $request->validated()['reason'] ?? null);
+        } catch (BookingRuleViolationException $e) {
+            return back()->withErrors(['cancel' => $e->getMessage()]);
+        }
+
+        Inertia::flash('toast', $hasil['refunds_dp']
+            ? ['type' => 'success', 'message' => 'Booking dibatalkan. DP dikembalikan sesuai kebijakan.']
+            : ['type' => 'warning', 'message' => 'Booking dibatalkan. DP hangus karena melewati batas pembatalan.']
+        );
+
+        return to_route('bookings.show', $booking);
+    }
+
+    private function rupiah(int $amount): string
+    {
+        return 'Rp '.number_format($amount, 0, ',', '.');
     }
 
     /**
