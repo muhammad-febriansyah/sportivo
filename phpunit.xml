@@ -11,6 +11,11 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!-- Test race condition: butuh data ter-commit agar proses paralel
+             bisa melihatnya, jadi memakai DatabaseTruncation (lihat tests/Pest.php). -->
+        <testsuite name="Concurrency">
+            <directory>tests/Concurrency</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

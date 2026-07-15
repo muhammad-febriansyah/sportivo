@@ -1,6 +1,7 @@
 <?php
 
 use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +22,14 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(fn () => test()->seed(RoleSeeder::class))
     ->in('Feature');
+
+// Test race condition memakai DatabaseTruncation, bukan RefreshDatabase:
+// transaksi RefreshDatabase membuat data seed tidak terlihat oleh proses lain,
+// sehingga dua proses yang bersaing tidak akan menemukan data apa pun.
+pest()->extend(TestCase::class)
+    ->use(DatabaseTruncation::class)
+    ->beforeEach(fn () => test()->seed(RoleSeeder::class))
+    ->in('Concurrency');
 
 /*
 |--------------------------------------------------------------------------
