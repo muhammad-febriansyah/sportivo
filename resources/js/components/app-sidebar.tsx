@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Users } from 'lucide-react';
+import { BookOpen, Building2, FolderGit2, LayoutGrid, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,6 +14,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as branchesIndex } from '@/routes/branches';
 import { index as usersIndex } from '@/routes/users';
 import type { NavItem } from '@/types';
 
@@ -25,8 +26,13 @@ const navUmum: NavItem[] = [
     },
 ];
 
-// Manajemen user hanya untuk owner — lihat UserPolicy.
+// Master data hanya untuk owner — lihat UserPolicy dan BranchPolicy.
 const navOwner: NavItem[] = [
+    {
+        title: 'Cabang',
+        href: branchesIndex(),
+        icon: Building2,
+    },
     {
         title: 'User',
         href: usersIndex(),

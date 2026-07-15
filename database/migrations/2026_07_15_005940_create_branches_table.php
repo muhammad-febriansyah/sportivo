@@ -16,6 +16,14 @@ return new class extends Migration
             $table->string('name');
             $table->string('code')->unique()->comment('Prefix internal, contoh JKT01');
             $table->text('address');
+            // Menyimpan kolom `id` milik tabel laravolt (sesuai docs/02-erd.md).
+            //
+            // PERHATIAN: laravolt merelasikan wilayah lewat `code` (kode BPS), bukan `id`,
+            // dan seeder-nya melakukan truncate + insert ulang (lihat
+            // vendor/laravolt/indonesia/src/Seeds/DatabaseSeeder.php). Artinya `id` dapat
+            // bergeser bila `php artisan laravolt:indonesia:seed` dijalankan ulang pada
+            // database yang sudah berisi cabang — dan cabang akan menunjuk wilayah yang
+            // salah tanpa error. JANGAN jalankan seeder itu ulang di database berisi data.
             $table->unsignedBigInteger('province_id')->nullable();
             $table->unsignedBigInteger('city_id')->nullable();
             $table->unsignedBigInteger('district_id')->nullable();
