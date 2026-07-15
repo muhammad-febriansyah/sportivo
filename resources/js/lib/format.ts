@@ -114,3 +114,35 @@ const LABEL_STATUS_LAPANGAN: Record<string, string> = {
 export function formatStatusLapangan(status: string): string {
     return LABEL_STATUS_LAPANGAN[status] ?? status;
 }
+
+const LABEL_STATUS_BOOKING: Record<string, string> = {
+    pending: 'Menunggu Pembayaran',
+    confirmed_dp: 'DP Terbayar',
+    paid: 'Lunas',
+    completed: 'Selesai',
+    cancelled: 'Dibatalkan',
+    no_show: 'Tidak Hadir',
+};
+
+/**
+ * Cerminan App\Enums\BookingStatus::label() di sisi klien.
+ */
+export function formatStatusBooking(status: string): string {
+    return LABEL_STATUS_BOOKING[status] ?? status;
+}
+
+/**
+ * Warna badge status booking — docs/04-design-system.md bagian Status Badge.
+ */
+export function warnaStatusBooking(status: string): string {
+    return (
+        {
+            pending: 'bg-slate-500 text-white',
+            confirmed_dp: 'bg-orange-500 text-white',
+            paid: 'bg-green-600 text-white',
+            completed: 'bg-blue-600 text-white',
+            cancelled: 'bg-red-600 text-white',
+            no_show: 'border border-red-600 text-red-600',
+        }[status] ?? 'bg-slate-500 text-white'
+    );
+}

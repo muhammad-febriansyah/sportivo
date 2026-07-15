@@ -2,6 +2,9 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     Building2,
+    CalendarDays,
+    ClipboardList,
+    Contact,
     FolderGit2,
     Goal,
     LayoutGrid,
@@ -21,16 +24,34 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { grid as bookingsGrid, index as bookingsIndex } from '@/routes/bookings';
 import { index as branchesIndex } from '@/routes/branches';
+import { index as customersIndex } from '@/routes/customers';
 import { index as fieldsIndex } from '@/routes/fields';
 import { index as usersIndex } from '@/routes/users';
 import type { NavItem } from '@/types';
 
+// Seluruh role internal — pembatasannya per cabang, bukan per role.
 const navUmum: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Grid Booking',
+        href: bookingsGrid(),
+        icon: CalendarDays,
+    },
+    {
+        title: 'Booking',
+        href: bookingsIndex(),
+        icon: ClipboardList,
+    },
+    {
+        title: 'Pelanggan',
+        href: customersIndex(),
+        icon: Contact,
     },
 ];
 

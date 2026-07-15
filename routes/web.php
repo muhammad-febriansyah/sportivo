@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\RegionController;
@@ -32,6 +34,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('fields/{field}/pricing', [PricingRuleController::class, 'store'])->name('fields.pricing.store');
     Route::put('pricing/{pricing_rule}', [PricingRuleController::class, 'update'])->name('pricing.update');
     Route::delete('pricing/{pricing_rule}', [PricingRuleController::class, 'destroy'])->name('pricing.destroy');
+
+    // Grid ketersediaan — tampilan inti (Modul 5). Didaftarkan sebelum
+    // bookings/{booking} agar "grid" tidak tertangkap sebagai id booking.
+    Route::get('bookings/grid', [BookingController::class, 'grid'])->name('bookings.grid');
+
+    Route::resource('bookings', BookingController::class)->only([
+        'index', 'create', 'store', 'show',
+    ]);
+    Route::post('bookings/{booking}/check-in', [BookingController::class, 'checkIn'])->name('bookings.check-in');
+
+    // Pelanggan — tidak terikat cabang; kasir perlu membuatnya saat walk-in.
+    Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    Route::post('customers/quick', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
+    Route::resource('customers', CustomerController::class)->only([
+        'index', 'create', 'store', 'show', 'edit', 'update',
+    ]);
 
     // Dropdown wilayah bertingkat untuk form cabang.
     Route::get('regions/cities', [RegionController::class, 'cities'])->name('regions.cities');

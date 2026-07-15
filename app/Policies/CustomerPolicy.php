@@ -2,64 +2,52 @@
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\User;
 
+/**
+ * Pelanggan TIDAK terikat cabang — satu orang bisa main di cabang mana pun,
+ * jadi tidak ada scoping cabang di sini.
+ *
+ * Kasir perlu membuat pelanggan saat input booking walk-in (US-05), tapi tidak
+ * mengubah status member — itu keputusan owner/admin (docs/01-prd.md Modul 10).
+ */
 class CustomerPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasAnyRole(UserRole::values());
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Customer $customer): bool
     {
-        return false;
+        return $this->viewAny($user);
     }
 
     /**
-     * Determine whether the user can create models.
+     * Kasir wajib bisa membuat pelanggan inline saat booking walk-in.
      */
     public function create(User $user): bool
     {
-        return false;
+        return $this->viewAny($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Customer $customer): bool
     {
-        return false;
+        return $user->isOwner() || $user->hasRole(UserRole::Admin->value);
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Mengubah status member berdampak langsung ke harga, jadi dibatasi.
      */
+    public function manageMembership(User $user, Customer $customer): bool
+    {
+        return $this->update($user, $customer);
+    }
+
     public function delete(User $user, Customer $customer): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Customer $customer): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Customer $customer): bool
-    {
-        return false;
+        return $user->isOwner();
     }
 }
