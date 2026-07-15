@@ -1,5 +1,6 @@
 <?php
 
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,8 +15,11 @@ use Tests\TestCase;
 |
 */
 
+// Role owner/admin/kasir adalah fondasi — factory state User::factory()->owner()
+// dan kawan-kawannya memanggil assignRole, jadi role harus selalu ada.
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(fn () => test()->seed(RoleSeeder::class))
     ->in('Feature');
 
 /*

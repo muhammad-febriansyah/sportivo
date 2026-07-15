@@ -75,3 +75,16 @@ export function formatWaktuWib(value: string | Date): string {
 export function toTanggalServer(value: Date): string {
     return format(value, 'yyyy-MM-dd');
 }
+
+const LABEL_ROLE: Record<string, string> = {
+    owner: 'Owner',
+    admin: 'Admin Cabang',
+    kasir: 'Kasir',
+};
+
+/**
+ * Cerminan App\Enums\UserRole::label() di sisi klien.
+ */
+export function formatRole(role: string): string {
+    return LABEL_ROLE[role] ?? role;
+}
