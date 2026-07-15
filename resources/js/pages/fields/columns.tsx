@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatStatusLapangan, formatTipeRumput } from '@/lib/format';
 import { destroy, edit } from '@/routes/fields';
+import { index as pricingIndex } from '@/routes/fields/pricing';
 import type { FieldRow, FieldStatus } from '@/types';
 
 function BadgeStatus({ status }: { status: FieldStatus }) {
@@ -49,6 +50,9 @@ function AksiLapangan({ field }: { field: FieldRow }) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={pricingIndex(field.id)}>Atur Harga</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                         <Link href={edit(field.id)}>Edit</Link>
                     </DropdownMenuItem>
